@@ -223,15 +223,16 @@ def computeFEMatrices(graph, features):
 	
 def computePMatrices(Es, graph):
 
+	Ps = []
 	for i in range(len(Es)):
-		
+		Ps.append({})
 		for key in Es[i].keys():
 			E = Es[i][key]
 			[U, s, V ]= np.linalg.svd(E, full_matrices=True)
-			Q=chooseP(U, s, V, np.mat([ [2], [2], [1] ]))
-                        P=Q
+			P = chooseP(U, s, V, np.mat([ [2], [2], [1] ]))
+			Ps[i][key] = P
 			
-	return P
+	return Ps
 	
 def correctP(point1, point2, R, T):
     
@@ -319,6 +320,22 @@ def findMaxTrackLength(keepingTrack):
 		if len(track) > tracksMaxLength:
 			tracksMaxLength = len(track)
 	return tracksMaxLength
+
+	
+def testpoint(Ps, graph)
+
+	I = np.mat([ 1, 0, 0, 0],[ 0, 1, 0, 0], [ 0, 0, 1, 0])
+	points3D=[]
+	for i in range(len(Ps)):
+		points3D.append({})
+		for key in Ps[i].keys():
+			graph[i][key] -> [ [x1, y1], [x2, y2]]
+			pt1 = [corr[0] for corr in graph[i][key]]
+			pt2 = [corr[1] for corr in graph[i][key]]
+				
+			points3D[i][key]= cv2.traingulatePoints(I, Ps[i][key], pt1,pt2)
+
+	return points3D
 	
 if __name__ == '__main__':
 	if len(argv) != 2:
@@ -347,8 +364,11 @@ if __name__ == '__main__':
 		#compute Projection Matrix
 		print 'Computing Projection Matrices'
 		Ps = computePMatrices(Es, graph)
-		
+
+		points3D = testpoint(Ps, graph)
+		plotReconstruction(points3D[0][1])
 	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
 	plotReconstruction(a)
 	'''
+
