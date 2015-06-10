@@ -322,14 +322,13 @@ def findMaxTrackLength(keepingTrack):
 	return tracksMaxLength
 
 	
-def testpoint(Ps, graph)
+def testpoint(Ps, graph):
 
 	I = np.mat([ 1, 0, 0, 0],[ 0, 1, 0, 0], [ 0, 0, 1, 0])
 	points3D=[]
 	for i in range(len(Ps)):
 		points3D.append({})
 		for key in Ps[i].keys():
-			graph[i][key] -> [ [x1, y1], [x2, y2]]
 			pt1 = [corr[0] for corr in graph[i][key]]
 			pt2 = [corr[1] for corr in graph[i][key]]
 				
