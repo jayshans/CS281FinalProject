@@ -277,7 +277,7 @@ def plotReconstruction(XYZ):
 	
 	
 if __name__ == '__main__':
-	'''if len(argv) != 2:
+	if len(argv) != 2:
 		print 'Usage:'
 		print argv[0], 'ImageDirectory'
 		
@@ -294,7 +294,8 @@ if __name__ == '__main__':
 		print 'Computing Projection Matrices'
 		Ps = computePMatrices(Es, graph)
 		#track generation
-	'''
+	
+	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
 	plotReconstruction(a)
-	
+	'''
