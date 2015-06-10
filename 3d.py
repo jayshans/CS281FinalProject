@@ -290,6 +290,35 @@ def plotReconstruction(XYZ):
 	ax.set_aspect(3, None, 'C')
 	plt.show()
 	
+def buildTracks(graph):
+	keepingTrack = []
+
+	for image in range(len(graph)):
+		for match in graph[image].keys():
+			for points in graph[image][match]:
+				x1 = points[0][0]
+				y1 = points[0][1]
+				x2 = points[1][0]
+				y2 = points[1][1]
+				
+				point1 = (x1, y1, image)
+				point2 = (x2, y2, match)
+				
+				for i in range(len(keepingTrack)):
+					if keepingTrack[i][-1] == point1:
+						keepingTrack[i].append(point2)
+						continue
+				
+				keepingTrack.append([point1,point2])		
+	
+	return keepingTrack
+
+def findMaxTrackLength(keepingTrack):
+	tracksMaxLength = 0
+	for track in keepingTrack:
+		if len(track) > tracksMaxLength:
+			tracksMaxLength = len(track)
+	return tracksMaxLength
 	
 if __name__ == '__main__':
 	if len(argv) != 2:
@@ -297,19 +326,28 @@ if __name__ == '__main__':
 		print argv[0], 'ImageDirectory'
 		
 	else:
+		#Preprocessing
 		print 'Extracting SIFT Features...'
 		features = getFeaturesFromDir(argv[1])
 		print 'Building NN Graph...'
 		graph = buildNNGraph(features)
 		
-		#skeleton graph
+		#Track Generation
+		print 'Tracking...'
+		keepingTrack = buildTracks(graph)
+		print 'buildTracks Length:', len(keepingTrack)
+		tracksMaxLength = findMaxTrackLength(keepingTrack)
+		print 'Longest buildTracks Length:', tracksMaxLength
+		
+		#Skeleton Graph
 		print 'Computing Fundamental Essential Matrices'
-		Es = computeFEMatrices(graph, features)#RANSAC for fundamental / essential matrix
+		#RANSAC for fundamental / essential matrix
+		Es = computeFEMatrices(graph, features)
+		
 		#compute Projection Matrix
 		print 'Computing Projection Matrices'
 		Ps = computePMatrices(Es, graph)
-		#track generation
-	
+		
 	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
 	plotReconstruction(a)
