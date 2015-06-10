@@ -17,14 +17,16 @@ EXIF_FOCAL_LENGTH = 'EXIF FocalLength'
 # RANSAC / fundamental matrix
 MAX_ITERATIONS = 1000
 TH_ACCEPT = 0.40
-TH_PX = 3.0
+TH_PX = 2.0
 
 K = [ 
 	[ 3.71413737e3, 0.0, 1.48020701e3],
 	[ 0.0, 3.72821333e3, 1.17327469e3],
 	[ 0.0, 0.0, 1.0]
 	]
-Kt = np.Tpose(K)
+Kt = np.transpose(K)
+
+imageNames = []
 
 class Feature(object):
 	kp = None
@@ -50,7 +52,7 @@ def readAndExtract(filePath):
 	nPixels = shp[0]*shp[1]
 	if nPixels > 2000000:
 		scale = float(2000000) / nPixels
-		gray = cv2.resiTe(gray, (0, 0), fx=scale, fy=scale)
+		gray = cv2.resize(gray, (0, 0), fx=scale, fy=scale)
 	
 	# get SIFT features as a vector
 	sift = cv2.SIFT()
@@ -64,6 +66,7 @@ def getFeaturesFromDir(dir):
 	features = []
 	
 	for fileName in os.listdir(dir):
+		imageNames.append(fileName)
 		filePath = os.path.join(dir, fileName)
 		if os.path.isfile(filePath) and filePath[-3:] != '.db':
 			f = Feature()
@@ -144,9 +147,11 @@ def getInliers(F, corrs):
 		x_prime = [c[1][1], c[1][1], 1]
 		x_est = np.dot(F, x)
 		d = np.dot(x_prime, x_est)
+		
 		if abs(d) <= TH_PX:
 			inliers.append(c)
 	
+	print np.shape(inliers)
 	return inliers
 
 def confidence(F, corrs):
@@ -187,11 +192,15 @@ def computeFMatrix(corrs):
 		c = confidence(F, corrs)
 		if c > TH_ACCEPT:
 			Fbest = F
+			cbest = c
 			break
 		elif c > cbest:
 			Fbest = F
 			cbest = c
+	print cbest
+	print confidence(Fbest, corrs)
 	I = getInliers(Fbest, corrs)
+	print np.shape(I)
 	F = eightPoint(I)
 	return F
 	
@@ -202,6 +211,7 @@ def computeFEMatrices(graph, features):
 	for i, img1 in enumerate(graph):
 		Es.append({})
 		for key in img1.keys():
+			print imageNames[i], 'vs', imageNames[key]
 			F = computeFMatrix(img1[key])
 			# compute the Essential matrix
 			E = np.dot( Kt, np.dot( F, K) )
