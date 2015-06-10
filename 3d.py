@@ -150,8 +150,6 @@ def getInliers(F, corrs):
 		
 		if abs(d) <= TH_PX:
 			inliers.append(c)
-	
-	print np.shape(inliers)
 	return inliers
 
 def confidence(F, corrs):
@@ -183,25 +181,25 @@ def computeFMatrix(corrs):
 		
 	Fbest = []
 	cbest = 0.0
-	
+	Ibest = []
 	for i in range(MAX_ITERATIONS):
 		sample = [ corrs[rand(n)] for i in range(8) ]
 		
 		F = eightPoint(sample)
-		
-		c = confidence(F, corrs)
+		I = getInliers(F, corrs)
+		c = float(len(I)) / len(corrs)
 		if c > TH_ACCEPT:
 			Fbest = F
 			cbest = c
+			Ibest = I
 			break
 		elif c > cbest:
 			Fbest = F
 			cbest = c
-	print cbest
-	print confidence(Fbest, corrs)
-	I = getInliers(Fbest, corrs)
-	print np.shape(I)
-	F = eightPoint(I)
+			Ibest = I
+			
+
+	F = eightPoint(Ibest)
 	return F
 	
 def computeFEMatrices(graph, features):
@@ -211,7 +209,7 @@ def computeFEMatrices(graph, features):
 	for i, img1 in enumerate(graph):
 		Es.append({})
 		for key in img1.keys():
-			print imageNames[i], 'vs', imageNames[key]
+			#print imageNames[i], 'vs', imageNames[key]
 			F = computeFMatrix(img1[key])
 			# compute the Essential matrix
 			E = np.dot( Kt, np.dot( F, K) )
@@ -229,26 +227,25 @@ def computePMatrices(Es, graph):
 		for key in Es[i].keys():
 			E = Es[i][key]
 			[U, s, V ]= np.linalg.svd(E, full_matrices=True)
-			P = chooseP(U, s, V, np.mat([ [2], [2], [1] ]))
+			P = chooseP(U, s, V, graph[i][key][0][0], graph[i][key][0][1])
 			Ps[i][key] = P
 			
 	return Ps
 	
 def correctP(point1, point2, R, T):
     
-    for first, second in Tip(point1, point2):
 		
-        z = np.dot(R[0, :] - second[0]*R[2, :], T) / np.dot(R[0, :] - second[0]*R[2, :], second)
-        Z1 = np.array([first[0] * z, second[0] * z, z])
-        Z2 = np.dot(R.T, Z1) - np.dot(R.T, T)
+	z = np.dot(R[0, :] - point2[0]*R[2, :], T) / np.dot(R[0, :] - point2[0]*R[2, :], np.mat([point2[0], point2[1], 1]).T)
+	Z1 = np.array([point1 * z, point2 * z, z])
+	Z2 = np.dot(R.T, Z1) - np.dot(R.T, T)
 
-        if Z1[2] < 0 or Z2[2] < 0:
-            return False
-
-    return True
+	if Z1[2] < 0 or Z2[2] < 0:
+		return False
+	else:
+		return True
 	
 
-def chooseP(U, s, V, apoint):
+def chooseP(U, s, V, point1, point2):
 
 	R = np.mat(U) * np.matrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]]) * np.mat(V)
 	T=U[:, 2]
