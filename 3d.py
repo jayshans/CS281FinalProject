@@ -58,6 +58,10 @@ def readAndExtract(filePath):
 	sift = cv2.SIFT()
 	keyPoints, descriptors = sift.detectAndCompute(gray, None)
 	
+	# img = cv2.drawKeypoints(gray, keyPoints)
+	# cv2.imshow(filePath, img)
+	# cv2.waitKey(0);
+	
 	return keyPoints, descriptors
 
 def getFeaturesFromDir(dir):
@@ -88,7 +92,7 @@ def buildNNGraph(features):
 			distances, nn_i = kd.kneighbors(feat2.des)
 			
 			for d_i, dist in enumerate(distances):
-				if (dist[0] / dist[1]) < 0.8: #passes Lowe's Ratio test
+				if (dist[0] < 0.8*dist[1]): #passes Lowe's Ratio test
 					try:
 						graph[i][j].append( (feat1.kp[nn_i[d_i][0]].pt, feat2.kp[d_i].pt) )
 					except KeyError:
@@ -129,7 +133,7 @@ def eightPoint(corrs):
 	s = np.reshape(vt[np.argmin(w)], (3, 3) )
 	
 	# return the vector as the F matrix
-	return s
+	return m
 	
 def distance(a, b):
 	''' Compute the euclidean distance between two vectors
@@ -200,7 +204,7 @@ def computeFMatrix(corrs):
 			
 
 	F = eightPoint(Ibest)
-	return F
+	return F, Ibest
 	
 def computeFEMatrices(graph, features):
 	''' Get the fundamental matrices for all matching image pairs
@@ -210,12 +214,13 @@ def computeFEMatrices(graph, features):
 		Es.append({})
 		for key in img1.keys():
 			#print imageNames[i], 'vs', imageNames[key]
-			F = computeFMatrix(img1[key])
+			F, graph[i][key] = computeFMatrix(img1[key])
+			#F, I = computeFMatrix(img1[key])
 			# compute the Essential matrix
 			E = np.dot( Kt, np.dot( F, K) )
 			Es[i][key] = E
-					
-	return Es
+
+	return Es, graph
 	
 	
 	
@@ -281,13 +286,13 @@ def plotReconstruction(XYZ):
 	ax = fig.add_subplot(111, projection='3d')
 
 	plt.axis('off')
-	ax.scatter(X, Y, Z, c='black', depthshade=False)
+	ax.scatter(X, Y, Z, c='black', s=5, depthshade=False)
 	ax.get_yaxis().set_visible(False)
 	ax.get_xaxis().set_visible(False)
 	ax.set_xticklabels([])
 	ax.set_yticklabels([])
 	ax.set_zticklabels([])
-	ax.set_aspect(3, None, 'C')
+	ax.set_aspect('equal')
 	plt.show()
 	
 def buildTracks(graph):
@@ -332,7 +337,7 @@ def testpoint(Ps, graph):
 			pt2 = np.array([corr[1] for corr in graph[i][key]]).T
 			
 			pnts = cv2.triangulatePoints(I, Ps[i][key], pt1, pt2)
-			points3D[i][key] = pnts
+			points3D[i][key] = pnts.T
 
 	return points3D
 	
@@ -358,15 +363,20 @@ if __name__ == '__main__':
 		#Skeleton Graph
 		print 'Computing Fundamental Essential Matrices'
 		#RANSAC for fundamental / essential matrix
-		Es = computeFEMatrices(graph, features)
+		Es, graph = computeFEMatrices(graph, features)
 		
 		#compute Projection Matrix
 		print 'Computing Projection Matrices'
 		Ps = computePMatrices(Es, graph)
 
 		points3D = testpoint(Ps, graph)
-		print len(points3D[0][1])
-		plotReconstruction(points3D[0][1])
+		print np.shape(points3D[0][1])
+		pts = []
+		for key in points3D[0].keys():
+			for p in points3D[0][key]:
+				pts.append(p)
+		
+		plotReconstruction(pts)
 	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
 	plotReconstruction(a)
