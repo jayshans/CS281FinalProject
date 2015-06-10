@@ -236,7 +236,7 @@ def correctP(point1, point2, R, T):
     
 		
 	z = np.dot(R[0, :] - point2[0]*R[2, :], T) / np.dot(R[0, :] - point2[0]*R[2, :], np.mat([point2[0], point2[1], 1]).T)
-	Z1 = np.array([point1 * z, point2 * z, z])
+	Z1 = np.array([point1[0] * z, point1[1] * z, z])
 	Z2 = np.dot(R.T, Z1) - np.dot(R.T, T)
 
 	if Z1[2] < 0 or Z2[2] < 0:
