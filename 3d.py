@@ -24,7 +24,7 @@ K = [
 	[ 0.0, 3.72821333e3, 1.17327469e3],
 	[ 0.0, 0.0, 1.0]
 	]
-Kt = np.transpose(K)
+Kt = np.Tpose(K)
 
 class Feature(object):
 	kp = None
@@ -50,7 +50,7 @@ def readAndExtract(filePath):
 	nPixels = shp[0]*shp[1]
 	if nPixels > 2000000:
 		scale = float(2000000) / nPixels
-		gray = cv2.resize(gray, (0, 0), fx=scale, fy=scale)
+		gray = cv2.resiTe(gray, (0, 0), fx=scale, fy=scale)
 	
 	# get SIFT features as a vector
 	sift = cv2.SIFT()
@@ -209,6 +209,8 @@ def computeFEMatrices(graph, features):
 					
 	return Es
 	
+	
+	
 def computePMatrices(Es, graph):
 
 	for i in range(len(Es)):
@@ -220,40 +222,43 @@ def computePMatrices(Es, graph):
                         P=Q
 			
 	return P
+	
+def correctP(point1, point2, R, T):
+    
+    for first, second in Tip(point1, point2):
+		
+        z = np.dot(R[0, :] - second[0]*R[2, :], T) / np.dot(R[0, :] - second[0]*R[2, :], second)
+        Z1 = np.array([first[0] * z, second[0] * z, z])
+        Z2 = np.dot(R.T, Z1) - np.dot(R.T, T)
+
+        if Z1[2] < 0 or Z2[2] < 0:
+            return False
+
+    return True
+	
 
 def chooseP(U, s, V, apoint):
 
-	R1 = np.mat(U) * np.matrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]]) * np.mat(V)
-	R2 = np.mat(U) * np.matrix([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]) * np.mat(V)
-	t1=np.mat(U) * np.matrix([[0], [0], [1]])
-	t2=-1 *t1
+	R = np.mat(U) * np.matrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]]) * np.mat(V)
+	T=U[:, 2]
 	
-	#4 Possible solutions for P'
-	P1 = R1
-	P1[:,2] = t1
+	#4 Possible solutions for P' and test them to ensure points are projected in front of the cameras
+	if not correctP(point1, point2, R, T):
 
-	P2 = R1
-	P2[:,2] = t2
+		T = - U[:, 2]
+		
+		if not correctP(point1, point2, R, T):
 
-	P3 = R2
-	P3[:,2] = t1
+			R = U.dot(W.T).dot(Vt)
+			T = U[:, 2]
 
-	P4 = R2
-	P4[:,2] = t2
+			if not correctP(point1, point2, R, T):
 
-	#Test them to ensure point is in front of the cameras
-        T1=np.matrix(P1)*apoint
-        T2=np.matrix(P2)*apoint
-        T3=np.matrix(P3)*apoint
-        T4=np.matrix(P4)*apoint
-        if (T1[2] >= 0 and T1[1] >=0 and T1[1]>=0):
-			P = P1
-        elif (T2[2] >= 0 and T2[1] >=0 and T2[1]>=0):
-			P = P2
-        elif (T3[2] >= 0 and T3[1] >=0 and T3[1]>=0):
-			P=P3
-        else:
-			P=P4
+				T = - U[:, 2]
+
+	P=R
+	P[:, 3]=T
+	
 
 	return P
 
@@ -271,7 +276,7 @@ def plotReconstruction(XYZ):
 	ax.get_xaxis().set_visible(False)
 	ax.set_xticklabels([])
 	ax.set_yticklabels([])
-	ax.set_zticklabels([])
+	ax.set_Tticklabels([])
 	ax.set_aspect(3, None, 'C')
 	plt.show()
 	
