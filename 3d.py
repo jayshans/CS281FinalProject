@@ -214,8 +214,8 @@ def computeFEMatrices(graph, features):
 		Es.append({})
 		for key in img1.keys():
 			#print imageNames[i], 'vs', imageNames[key]
-			F, graph[i][key] = computeFMatrix(img1[key])
-			#F, I = computeFMatrix(img1[key])
+			#F, graph[i][key] = computeFMatrix(img1[key])
+			F, I = computeFMatrix(img1[key])
 			# compute the Essential matrix
 			E = np.dot( Kt, np.dot( F, K) )
 			Es[i][key] = E
@@ -272,8 +272,7 @@ def chooseP(U, s, V, point1, point2):
 				T = - np.mat(U[:, 2]).T
 
 	P=R
-	P = np.append( P, T, axis = 1 )
-	
+	P = np.dot(K, np.append( P, T, axis = 1 ))
 
 	return P
 
@@ -285,7 +284,7 @@ def plotReconstruction(XYZ):
 	fig = plt.figure()
 	ax = fig.add_subplot(111, projection='3d')
 
-	plt.axis('off')
+	#plt.axis('off')
 	ax.scatter(X, Y, Z, c='black', s=5, depthshade=False)
 	ax.get_yaxis().set_visible(False)
 	ax.get_xaxis().set_visible(False)
@@ -376,7 +375,7 @@ if __name__ == '__main__':
 			for p in points3D[0][key]:
 				pts.append(p)
 		
-		plotReconstruction(pts)
+		plotReconstruction(points3D[0][1])
 	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
 	plotReconstruction(a)
