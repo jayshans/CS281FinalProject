@@ -340,6 +340,34 @@ def testpoint(Ps, graph):
 
 	return points3D
 	
+def recon(m):
+
+	r, c = np.shape(m)
+	U, d, Vt = np.linalg.svd(m)
+	
+	#invert m
+	dInv = [ 1.0 / i for i in d]
+	mInv = np.mat(U)*np.diag(dInv)*np.mat(Vt)
+	
+	#initial estimates
+	P = np.mat(np.dot( U[:, :4], np.diag(d[:4])))
+	S = np.mat(Vt[:, :4])
+	
+	for someNumber in range(1000):
+		if d[4] < 0.01:
+			return S
+		else:
+			# estimate projective scaling
+			Z = mInv*P*S
+			zm = np.multiply(m, Z)
+			
+			U, d, Vt = np.linalg.svd(zm)
+			
+			P = np.mat(np.dot( U[:, :4], np.diag(d[:4])))
+			S = np.mat(Vt[:, :4])
+			
+	return None
+
 if __name__ == '__main__':
 	if len(argv) != 2:
 		print 'Usage:'
