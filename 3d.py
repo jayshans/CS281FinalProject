@@ -1,14 +1,15 @@
-
 import time
 import os
 import cv2
-import exifread
 
 import numpy as np
 
 from sys import argv
 from sklearn.neighbors import NearestNeighbors
 from random import randrange as rand
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # EXIF tags
 EXIF_FOCAL_LENGTH = 'EXIF FocalLength'
@@ -256,8 +257,27 @@ def chooseP(U, s, V, apoint):
 
 	return P
 
+def plotReconstruction(XYZ):
+	X = [x[0] for x in XYZ]
+	Y = [x[1] for x in XYZ]
+	Z = [x[2] for x in XYZ]
+	
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+
+	plt.axis('off')
+	ax.scatter(X, Y, Z, c='black', depthshade=False)
+	ax.get_yaxis().set_visible(False)
+	ax.get_xaxis().set_visible(False)
+	ax.set_xticklabels([])
+	ax.set_yticklabels([])
+	ax.set_zticklabels([])
+	ax.set_aspect(3, None, 'C')
+	plt.show()
+	
+	
 if __name__ == '__main__':
-	if len(argv) != 2:
+	'''if len(argv) != 2:
 		print 'Usage:'
 		print argv[0], 'ImageDirectory'
 		
@@ -274,6 +294,7 @@ if __name__ == '__main__':
 		print 'Computing Projection Matrices'
 		Ps = computePMatrices(Es, graph)
 		#track generation
-		
-	
+	'''
+	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
+	plotReconstruction(a)
 	
