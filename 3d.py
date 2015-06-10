@@ -226,7 +226,7 @@ def computePMatrices(Es, graph):
 		Ps.append({})
 		for key in Es[i].keys():
 			E = Es[i][key]
-			[U, s, V ]= np.linalg.svd(E, full_matrices=True)
+			U, s, V = np.linalg.svd(E, full_matrices=True)
 			P = chooseP(U, s, V, graph[i][key][0][0], graph[i][key][0][1])
 			Ps[i][key] = P
 			
@@ -235,11 +235,12 @@ def computePMatrices(Es, graph):
 def correctP(point1, point2, R, T):
     
 		
-	z = np.dot(R[0, :] - point2[0]*R[2, :], T) / np.dot(R[0, :] - point2[0]*R[2, :], np.mat([point2[0], point2[1], 1]).T)
+	b = np.dot(R[0, :] - point2[0]*R[2, :], T) / np.dot(R[0, :] - point2[0]*R[2, :], np.mat([point2[0], point2[1], 1]).T)
+	z = b[0, 0]
 	Z1 = np.array([point1[0] * z, point1[1] * z, z])
 	Z2 = np.dot(R.T, Z1) - np.dot(R.T, T)
 
-	if Z1[2] < 0 or Z2[2] < 0:
+	if Z1[2] < 0 or Z2[0, 2] < 0:
 		return False
 	else:
 		return True
@@ -247,25 +248,26 @@ def correctP(point1, point2, R, T):
 
 def chooseP(U, s, V, point1, point2):
 
-	R = np.mat(U) * np.matrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]]) * np.mat(V)
-	T=U[:, 2]
+	W = np.matrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+	R = np.mat(U) * W * np.mat(V)
+	T=np.mat(U[:, 2]).T
 	
 	#4 Possible solutions for P' and test them to ensure points are projected in front of the cameras
 	if not correctP(point1, point2, R, T):
 
-		T = - U[:, 2]
+		T = - np.mat(U[:, 2]).T
 		
 		if not correctP(point1, point2, R, T):
 
-			R = U.dot(W.T).dot(Vt)
-			T = U[:, 2]
+			R = U.dot(W.T).dot(V)
+			T = np.mat(U[:, 2]).T
 
 			if not correctP(point1, point2, R, T):
 
-				T = - U[:, 2]
+				T = - np.mat(U[:, 2]).T
 
 	P=R
-	P[:, 3]=T
+	P = np.append( P, T, axis = 1 )
 	
 
 	return P
@@ -284,7 +286,7 @@ def plotReconstruction(XYZ):
 	ax.get_xaxis().set_visible(False)
 	ax.set_xticklabels([])
 	ax.set_yticklabels([])
-	ax.set_Tticklabels([])
+	ax.set_zticklabels([])
 	ax.set_aspect(3, None, 'C')
 	plt.show()
 	
@@ -321,15 +323,16 @@ def findMaxTrackLength(keepingTrack):
 	
 def testpoint(Ps, graph):
 
-	I = np.mat([ 1, 0, 0, 0],[ 0, 1, 0, 0], [ 0, 0, 1, 0])
+	I = np.mat([[ 1, 0, 0, 0],[ 0, 1, 0, 0], [ 0, 0, 1, 0]])
 	points3D=[]
 	for i in range(len(Ps)):
 		points3D.append({})
 		for key in Ps[i].keys():
-			pt1 = [corr[0] for corr in graph[i][key]]
-			pt2 = [corr[1] for corr in graph[i][key]]
-				
-			points3D[i][key]= cv2.traingulatePoints(I, Ps[i][key], pt1,pt2)
+			pt1 = np.array([corr[0] for corr in graph[i][key]]).T
+			pt2 = np.array([corr[1] for corr in graph[i][key]]).T
+			
+			pnts = cv2.triangulatePoints(I, Ps[i][key], pt1, pt2)
+			points3D[i][key] = pnts
 
 	return points3D
 	
@@ -362,6 +365,7 @@ if __name__ == '__main__':
 		Ps = computePMatrices(Es, graph)
 
 		points3D = testpoint(Ps, graph)
+		print len(points3D[0][1])
 		plotReconstruction(points3D[0][1])
 	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
