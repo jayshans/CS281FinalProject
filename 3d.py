@@ -7,6 +7,7 @@ import numpy as np
 from sys import argv
 from sklearn.neighbors import NearestNeighbors
 from random import randrange as rand
+from random import sample
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -16,6 +17,8 @@ EXIF_FOCAL_LENGTH = 'EXIF FocalLength'
 
 # RANSAC / fundamental matrix
 MAX_ITERATIONS = 1000
+SHARED_PTS_LIMIT = 1000
+
 TH_ACCEPT = 0.40
 TH_PX = 2.0
 
@@ -336,18 +339,30 @@ def getSharedPoints(numberOfImages, keepingTrack):
 			dataStructure[image*3][-1] = points[0]
 			dataStructure[image*3+1][-1] = points[1]
 			dataStructure[image*3+2][-1] = 1
-			
-	sharedPoints = np.array(dataStructure[:9])
-	counter = 0
-	while(counter < len(sharedPoints[0])):
-		if sharedPoints[0,counter] == None or sharedPoints[3,counter] == None or sharedPoints[6,counter] == None:
-			sharedPoints = np.delete(sharedPoints, counter, 1)
-		else:
-			counter += 1
-			
+	
+	largestAmountSharedPoints = 0
+	largestSharedPointsSet = []
+	
+	for j in range(len(SHARED_PTS_LIMIT)):
+		random_images = sample(range(numberOfImages), 3)
+		random_images_indices = [random_images[0]*3, random_images[0]*3+1, random_images[0]*3+2, 
+								random_images[1]*3, random_images[1]*3+1, random_images[1]*3+2,
+								random_images[2]*3, random_images[2]*3+1, random_images[2]*3+2]
+								
+		sharedPoints = np.array(dataStructure[random_images_indices])
+		counter = 0
+		while(counter < len(sharedPoints[0])):
+			if sharedPoints[0,counter] == None or sharedPoints[3,counter] == None or sharedPoints[6,counter] == None:
+				sharedPoints = np.delete(sharedPoints, counter, 1)
+			else:
+				counter += 1
+		if len(sharedPoints[0]) > largestAmountSharedPoints:
+			largestAmountSharedPoints = len(sharedPoints[0])
+			largestSharedPointsSet = sharedPoints
 	#print sharedPoints
 	#print len(sharedPoints), len(sharedPoints[0]), len(sharedPoints[1]), len(sharedPoints[2]) 
-	return sharedPoints	
+	
+	return largestAmountSharedPoints
 	
 def testpoint(Ps, graph):
 
