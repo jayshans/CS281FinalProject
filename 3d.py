@@ -17,7 +17,7 @@ EXIF_FOCAL_LENGTH = 'EXIF FocalLength'
 
 # RANSAC / fundamental matrix
 MAX_ITERATIONS = 1000
-SHARED_PTS_LIMIT = 1000
+SHARED_PTS_LIMIT = 100
 
 TH_ACCEPT = 0.40
 TH_PX = 2.0
@@ -343,19 +343,24 @@ def getSharedPoints(numberOfImages, keepingTrack):
 	largestAmountSharedPoints = 0
 	largestSharedPointsSet = []
 	
-	for j in range(len(SHARED_PTS_LIMIT)):
+	for j in range(SHARED_PTS_LIMIT):
 		random_images = sample(range(numberOfImages), 3)
-		random_images_indices = [random_images[0]*3, random_images[0]*3+1, random_images[0]*3+2, 
+		print random_images
+		random_images_indices = np.array([random_images[0]*3, random_images[0]*3+1, random_images[0]*3+2, 
 								random_images[1]*3, random_images[1]*3+1, random_images[1]*3+2,
-								random_images[2]*3, random_images[2]*3+1, random_images[2]*3+2]
-								
-		sharedPoints = np.array(dataStructure[random_images_indices])
+								random_images[2]*3, random_images[2]*3+1, random_images[2]*3+2])
+		#print random_images_indices
+		
+		sharedPoints = np.array([dataStructure[i] for i in random_images_indices])
+		
+		#sharedPoints = np.array(dataStructure[random_images_indices])
 		counter = 0
 		while(counter < len(sharedPoints[0])):
 			if sharedPoints[0,counter] == None or sharedPoints[3,counter] == None or sharedPoints[6,counter] == None:
 				sharedPoints = np.delete(sharedPoints, counter, 1)
 			else:
 				counter += 1
+		print len(sharedPoints[0])
 		if len(sharedPoints[0]) > largestAmountSharedPoints:
 			largestAmountSharedPoints = len(sharedPoints[0])
 			largestSharedPointsSet = sharedPoints
@@ -443,6 +448,9 @@ if __name__ == '__main__':
 		print 'Longest buildTracks Length:', tracksMaxLength
 				
 		sharedPoints = getSharedPoints(len(graph), keepingTrack)
+		print sharedPoints
+		print len(sharedPoints), len(sharedPoints[0])
+		exit()
 		
 		pnts = recon(sharedPoints)
 		pnts = np.array(np.transpose(pnts))
