@@ -367,7 +367,7 @@ def getSharedPoints(numberOfImages, keepingTrack):
 	#print sharedPoints
 	#print len(sharedPoints), len(sharedPoints[0]), len(sharedPoints[1]), len(sharedPoints[2]) 
 	
-	return largestAmountSharedPoints
+	return largestSharedPointsSet
 	
 def testpoint(Ps, graph):
 
