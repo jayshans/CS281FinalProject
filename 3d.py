@@ -278,8 +278,8 @@ def chooseP(U, s, V, point1, point2):
 
 def plotReconstruction(XYZ):
 	X = [x[0] for x in XYZ]
-	Y = [x[1] for x in XYZ]
-	Z = [x[2] for x in XYZ]
+	Y = [y[1] for y in XYZ]
+	Z = [z[2] for z in XYZ]
 	
 	fig = plt.figure()
 	ax = fig.add_subplot(111, projection='3d')
@@ -345,8 +345,8 @@ def getSharedPoints(numberOfImages, keepingTrack):
 		else:
 			counter += 1
 			
-	print sharedPoints
-	print len(sharedPoints), len(sharedPoints[0]), len(sharedPoints[1]), len(sharedPoints[2]) 
+	#print sharedPoints
+	#print len(sharedPoints), len(sharedPoints[0]), len(sharedPoints[1]), len(sharedPoints[2]) 
 	return sharedPoints	
 	
 def testpoint(Ps, graph):
@@ -364,31 +364,47 @@ def testpoint(Ps, graph):
 
 	return points3D
 	
+def getZ(m, P, S):
+
+	Z = np.copy(m)
+	for i in range(0, len(m), 3):
+	
+		P_i = np.mat(P[i:i+3])
+		
+		mZ_i = P_i * S
+		m_i = m[i:i+3, :]
+		
+		z_iEst = np.divide(mZ_i, m_i)
+		z_i = z_iEst[2]
+		
+		Z[i] = z_i
+		Z[i+1] = z_i
+		Z[i+2] = z_i
+
+	return np.mat(Z)
+	
 def recon(m):
 
 	r, c = np.shape(m)
-	U, d, Vt = np.linalg.svd(m)
-	
-	#invert m
-	dInv = [ 1.0 / i for i in d]
-	mInv = np.mat(U)*np.diag(dInv)*np.mat(Vt)
-	
+	U, d, Vt = np.linalg.svd(m, full_matrices = False)
+	print 'm', np.shape(m)
 	#initial estimates
 	P = np.mat(np.dot( U[:, :4], np.diag(d[:4])))
-	S = np.mat(Vt[:, :4])
+	S = np.mat(Vt[:4, :])
 	
 	for someNumber in range(1000):
 		if d[4] < 0.01:
+			print 'S', np.shape(S)
 			return S
 		else:
-			# estimate projective scaling
-			Z = mInv*P*S
-			zm = np.multiply(m, Z)
+			# estimate projective scaling\
+			Z = getZ(m, P, S)
+			W = np.multiply(m, Z)
 			
-			U, d, Vt = np.linalg.svd(zm)
+			U, d, Vt = np.linalg.svd(W, full_matrices=False)
 			
 			P = np.mat(np.dot( U[:, :4], np.diag(d[:4])))
-			S = np.mat(Vt[:, :4])
+			S = np.mat(Vt[:4, :])
 			
 	return None
 
@@ -412,6 +428,14 @@ if __name__ == '__main__':
 		print 'Longest buildTracks Length:', tracksMaxLength
 				
 		sharedPoints = getSharedPoints(len(graph), keepingTrack)
+		
+		pnts = recon(sharedPoints)
+		pnts = np.array(np.transpose(pnts))
+		print len(pnts)
+		if type(pnts) != type(None):
+			plotReconstruction(pnts)
+		exit()
+		
 		
 		#Skeleton Graph
 		print 'Computing Fundamental Essential Matrices'
