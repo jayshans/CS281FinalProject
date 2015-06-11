@@ -22,12 +22,12 @@ SHARED_PTS_LIMIT = 100
 TH_ACCEPT = 0.40
 TH_PX = 2.0
 
-K = [ 
+K = np.mat([ 
 	[ 3.71413737e3, 0.0, 1.48020701e3],
 	[ 0.0, 3.72821333e3, 1.17327469e3],
 	[ 0.0, 0.0, 1.0]
-	]
-Kt = np.transpose(K)
+	])
+Kt = K.T
 
 imageNames = []
 
@@ -206,8 +206,8 @@ def computeFMatrix(corrs):
 			Ibest = I
 			
 
-	F = eightPoint(Ibest)
-	return F, Ibest
+	F = eightPoint(corrs)
+	return F, corrs
 	
 def computeFEMatrices(graph, features):
 	''' Get the fundamental matrices for all matching image pairs
@@ -217,8 +217,8 @@ def computeFEMatrices(graph, features):
 		Es.append({})
 		for key in img1.keys():
 			#print imageNames[i], 'vs', imageNames[key]
-			#F, graph[i][key] = computeFMatrix(img1[key])
-			F, I = computeFMatrix(img1[key])
+			F, graph[i][key] = computeFMatrix(img1[key])
+			#F, I = computeFMatrix(img1[key])
 			# compute the Essential matrix
 			E = np.dot( Kt, np.dot( F, K) )
 			Es[i][key] = E
@@ -258,21 +258,21 @@ def chooseP(U, s, V, point1, point2):
 
 	W = np.matrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
 	R = np.mat(U) * W * np.mat(V)
-	T=np.mat(U[:, 2]).T
+	T=np.mat(U[:, 2])
 	
 	#4 Possible solutions for P' and test them to ensure points are projected in front of the cameras
 	if not correctP(point1, point2, R, T):
 
-		T = - np.mat(U[:, 2]).T
+		T = - np.mat(U[:, 2])
 		
 		if not correctP(point1, point2, R, T):
 
 			R = U.dot(W.T).dot(V)
-			T = np.mat(U[:, 2]).T
+			T = np.mat(U[:, 2])
 
 			if not correctP(point1, point2, R, T):
 
-				T = - np.mat(U[:, 2]).T
+				T = - np.mat(U[:, 2])
 
 	P=R
 	P = np.dot(K, np.append( P, T, axis = 1 ))
@@ -288,7 +288,7 @@ def plotReconstruction(XYZ):
 	ax = fig.add_subplot(111, projection='3d')
 
 	#plt.axis('off')
-	ax.scatter(X, Y, Z, c='black', s=2, depthshade=False)
+	ax.scatter(X, Y, Z, c='black', s=1, depthshade=False)
 	ax.get_yaxis().set_visible(False)
 	ax.get_xaxis().set_visible(False)
 	ax.set_xticklabels([])
@@ -379,8 +379,11 @@ def testpoint(Ps, graph):
 			pt1 = np.array([corr[0] for corr in graph[i][key]]).T
 			pt2 = np.array([corr[1] for corr in graph[i][key]]).T
 			
-			pnts = cv2.triangulatePoints(I, Ps[i][key], pt1, pt2)
-			points3D[i][key] = pnts.T
+			pnts = cv2.triangulatePoints(np.dot(K, I), Ps[i][key], pt1, pt2)
+			pnts = pnts.T
+			for k, pnt in enumerate(pnts):
+				pnts[k] = np.divide(pnt, pnt[3])
+			points3D[i][key] = pnts
 
 	return points3D
 	
@@ -395,7 +398,7 @@ def getZ(m, P, S):
 		m_i = m[i:i+3, :]
 		
 		z_iEst = np.divide(mZ_i, m_i)
-		z_i = z_iEst[2]
+		z_i = np.median(z_iEst, axis=0)
 		
 		Z[i] = z_i
 		Z[i+1] = z_i
@@ -411,9 +414,11 @@ def recon(m):
 	#initial estimates
 	P = np.mat(np.dot( U[:, :4], np.diag(d[:4])))
 	S = np.mat(Vt[:4, :])
-	
-	for someNumber in range(1000):
-		if d[4] < 0.01:
+	d4s = []
+	for someNumber in range(10000):
+		d4s.append( d[5] )
+		if d[5] < 2.0:
+			plt.scatter(range(len(d4s)), d4s)
 			print 'S', np.shape(S)
 			return S
 		else:
@@ -425,7 +430,9 @@ def recon(m):
 			
 			P = np.mat(np.dot( U[:, :4], np.diag(d[:4])))
 			S = np.mat(Vt[:4, :])
-			
+	
+	print 'recon unable to converge', d[4]
+	plt.scatter(range(len(d4s)), d4s)
 	return None
 
 if __name__ == '__main__':
@@ -447,17 +454,18 @@ if __name__ == '__main__':
 		tracksMaxLength = findMaxTrackLength(keepingTrack)
 		print 'Longest buildTracks Length:', tracksMaxLength
 				
-		sharedPoints = getSharedPoints(len(graph), keepingTrack)
-		print sharedPoints
-		print len(sharedPoints), len(sharedPoints[0])
-		exit()
+		#sharedPoints = getSharedPoints(len(graph), keepingTrack)
+		# print len(sharedPoints), len(sharedPoints[0])
 		
-		pnts = recon(sharedPoints)
-		pnts = np.array(np.transpose(pnts))
-		print len(pnts)
-		if type(pnts) != type(None):
-			plotReconstruction(pnts)
-		exit()
+		# pnts = recon(sharedPoints)
+		# pnts = np.array(np.transpose(pnts))
+		# print len(pnts)
+		# if type(pnts) != type(None):
+			# for i, pnt in enumerate(pnts):
+				# pnts[i] = np.divide(pnt, pnt[3])
+				# print pnt
+			# plotReconstruction(pnts)
+		# exit()
 		
 		
 		#Skeleton Graph
@@ -472,11 +480,14 @@ if __name__ == '__main__':
 		points3D = testpoint(Ps, graph)
 		print np.shape(points3D[0][1])
 		pts = []
+		max = 0
+		m_pnts = []
 		for key in points3D[0].keys():
-			for p in points3D[0][key]:
-				pts.append(p)
+			if len(points3D[0][key]) > max:
+				max  = len(points3D[0][key])
+				m_pnts = points3D[0][key]
 		
-		plotReconstruction(points3D[0][1])
+		plotReconstruction(m_pnts)
 	'''#plotting test
 	a = [[3,3,3],[2,1,5],[6,2,1],[0,2,5]]
 	plotReconstruction(a)
