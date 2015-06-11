@@ -288,7 +288,7 @@ def plotReconstruction(XYZ):
 	ax = fig.add_subplot(111, projection='3d')
 
 	#plt.axis('off')
-	ax.scatter(X, Y, Z, c='black', s=5, depthshade=False)
+	ax.scatter(X, Y, Z, c='black', s=2, depthshade=False)
 	ax.get_yaxis().set_visible(False)
 	ax.get_xaxis().set_visible(False)
 	ax.set_xticklabels([])
