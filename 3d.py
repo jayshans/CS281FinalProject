@@ -324,6 +324,28 @@ def findMaxTrackLength(keepingTrack):
 			tracksMaxLength = len(track)
 	return tracksMaxLength
 
+def getSharedPoints(numberOfImages, keepingTrack):
+	
+	dataStructure = [[] for i in range(numberOfImages)]
+	
+	for track in keepingTrack:
+		for i in range(numberOfImages):
+			dataStructure[i].append(None)
+		for points in track:
+			image = points[2]
+			dataStructure[image][-1] = np.array([[points[0]], [points[1]], [1]])
+			
+	sharedPoints = np.array(dataStructure[:3])
+	counter = 0
+	while(counter < len(sharedPoints[0])):
+		if sharedPoints[0,counter] == None or sharedPoints[1,counter] == None or sharedPoints[2,counter] == None:
+			sharedPoints = np.delete(sharedPoints, counter, 1)
+		else:
+			counter += 1
+			
+	print sharedPoints
+	print len(sharedPoints), len(sharedPoints[0]), len(sharedPoints[1]), len(sharedPoints[2]) 
+	return sharedPoints	
 	
 def testpoint(Ps, graph):
 
@@ -386,6 +408,10 @@ if __name__ == '__main__':
 		print 'buildTracks Length:', len(keepingTrack)
 		tracksMaxLength = findMaxTrackLength(keepingTrack)
 		print 'Longest buildTracks Length:', tracksMaxLength
+				
+		sharedPoints = getSharedPoints(len(graph), keepingTrack)
+		
+		recon(sharedPoints)
 		
 		#Skeleton Graph
 		print 'Computing Fundamental Essential Matrices'
